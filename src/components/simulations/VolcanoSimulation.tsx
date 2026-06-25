@@ -474,14 +474,14 @@ export default function VolcanoSimulation({ grade = 5, onDecisionResult }: Props
         </div>
       )}
 
-      <div className="relative w-full h-[min(400px,calc(100vh-12rem))] rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-stone-950 cursor-crosshair select-none">
+      <div className="relative w-full h-[min(400px,calc(100vh-12rem))] rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-stone-950 cursor-crosshair select-none touch-none">
         <div ref={containerRef} className="w-full h-full" />
 
         {!isLocked && !isMobile && (
           <div className="absolute top-4 left-4 bg-slate-900/80 text-slate-300 text-[9px] font-bold px-3 py-1.5 rounded-full border border-slate-700 flex items-center gap-1.5 pointer-events-none select-none">🖱️ Klik area 3D untuk lihat-lihat</div>
         )}
 
-        {isLocked && (
+        {(isLocked || (isMobile && gameStatus === "playing")) && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none">
             <div className="w-0.5 h-5 bg-white/40 rounded-full absolute left-1/2 -translate-x-1/2 -top-2.5" />
             <div className="w-5 h-0.5 bg-white/40 rounded-full absolute top-1/2 -translate-y-1/2 -left-2.5" />

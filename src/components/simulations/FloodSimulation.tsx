@@ -48,6 +48,7 @@ function makeWaterTexture(): THREE.CanvasTexture {
 }
 
 export default function FloodSimulation({ grade = 5, onDecisionResult }: Props) {
+  const isMobile = typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [trashLeft, setTrashLeft] = useState(4);
   const [gameStatus, setGameStatus] = useState<"idle" | "playing" | "success" | "flood">("idle");
@@ -268,14 +269,12 @@ export default function FloodSimulation({ grade = 5, onDecisionResult }: Props) 
     };
     document.addEventListener("pointerlockchange", onLockChange);
 
-    const onPointerDown = (e: MouseEvent) => {
-      if (e.button !== 0) return;
-      if (!document.pointerLockElement) {
-        if (e.target === renderer.domElement || containerRef.current?.contains(e.target as Node)) {
-          document.body.requestPointerLock();
-        }
-        return;
-      }
+    // ── Touch look + tap for mobile ──
+    let touchLookId: number | null = null;
+    let touchLookLX = 0, touchLookLY = 0;
+    let touchStartPos = { x: 0, y: 0 };
+    let touchWasDrag = false;
+    const doAngularDetect = () => {
       if (gameStatusRef.current !== "playing") return;
       const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion);
       const active = trashRef.current.filter((t) => t.parent !== null);
@@ -293,6 +292,56 @@ export default function FloodSimulation({ grade = 5, onDecisionResult }: Props) 
         setTrashLeft(remaining);
         if (remaining === 0) setGameStatus("success");
       }
+    };
+    const onFloodTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      touchLookId = e.touches[0].identifier;
+      touchLookLX = e.touches[0].clientX;
+      touchLookLY = e.touches[0].clientY;
+      touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      touchWasDrag = false;
+    };
+    const onFloodTouchMove = (e: TouchEvent) => {
+      if (touchLookId === null) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === touchLookId) {
+          const cx = e.changedTouches[i].clientX;
+          const cy = e.changedTouches[i].clientY;
+          if (Math.abs(cx - touchStartPos.x) > 10 || Math.abs(cy - touchStartPos.y) > 10) {
+            touchWasDrag = true;
+          }
+          const dx = cx - touchLookLX;
+          const dy = cy - touchLookLY;
+          yawRef.current -= dx * 0.005;
+          pitchRef.current -= dy * 0.005;
+          pitchRef.current = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitchRef.current));
+          touchLookLX = cx;
+          touchLookLY = cy;
+        }
+      }
+    };
+    const onFloodTouchEnd = (e: TouchEvent) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === touchLookId) {
+          touchLookId = null;
+          if (!touchWasDrag) doAngularDetect();
+        }
+      }
+    };
+    renderer.domElement.addEventListener("touchstart", onFloodTouchStart, { passive: true });
+    renderer.domElement.addEventListener("touchmove", onFloodTouchMove, { passive: true });
+    renderer.domElement.addEventListener("touchend", onFloodTouchEnd);
+
+    const onPointerDown = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      if (!document.pointerLockElement) {
+        if (isMobile) return;
+        if (e.target === renderer.domElement || containerRef.current?.contains(e.target as Node)) {
+          document.body.requestPointerLock();
+        }
+        return;
+      }
+      doAngularDetect();
     };
     document.addEventListener("mousedown", onPointerDown);
 
@@ -348,6 +397,9 @@ export default function FloodSimulation({ grade = 5, onDecisionResult }: Props) 
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("pointerlockchange", onLockChange);
       document.removeEventListener("mousedown", onPointerDown);
+      renderer.domElement.removeEventListener("touchstart", onFloodTouchStart);
+      renderer.domElement.removeEventListener("touchmove", onFloodTouchMove);
+      renderer.domElement.removeEventListener("touchend", onFloodTouchEnd);
       if (renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
       if (document.pointerLockElement) document.exitPointerLock();
       renderer.dispose();
@@ -411,7 +463,7 @@ export default function FloodSimulation({ grade = 5, onDecisionResult }: Props) 
     setTimer(30);
     setGameStatus("playing");
     waterLevRef.current = -0.55;
-    if (!document.pointerLockElement) document.body.requestPointerLock();
+    if (!isMobile && !document.pointerLockElement) document.body.requestPointerLock();
   };
 
   const resetGame = () => {
@@ -457,14 +509,14 @@ export default function FloodSimulation({ grade = 5, onDecisionResult }: Props) 
         </div>
       )}
 
-      <div className="relative w-full h-[min(400px,calc(100vh-12rem))] rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-slate-950 cursor-crosshair select-none">
+      <div className="relative w-full h-[min(400px,calc(100vh-12rem))] rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-slate-950 cursor-crosshair select-none touch-none">
         <div ref={containerRef} className="w-full h-full" />
 
-        {!isLocked && (
+        {!isLocked && !isMobile && (
           <div className="absolute top-4 left-4 bg-slate-900/80 text-slate-300 text-[9px] font-bold px-3 py-1.5 rounded-full border border-slate-700 flex items-center gap-1.5 pointer-events-none select-none">🖱️ Klik area 3D untuk lihat-lihat</div>
         )}
 
-        {isLocked && (
+        {(isLocked || (isMobile && gameStatus === "playing")) && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none">
             <div className="w-0.5 h-5 bg-white/40 rounded-full absolute left-1/2 -translate-x-1/2 -top-2.5" />
             <div className="w-5 h-0.5 bg-white/40 rounded-full absolute top-1/2 -translate-y-1/2 -left-2.5" />
