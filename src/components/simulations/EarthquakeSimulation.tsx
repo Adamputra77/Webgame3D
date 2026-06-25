@@ -75,7 +75,7 @@ function makePosterTexture(): THREE.CanvasTexture {
 }
 
 export default function EarthquakeSimulation({ grade = 5, onDecisionResult }: Props) {
-  const isMobile = typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0);
+  const isMobile = typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0 || /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
   const containerRef = useRef<HTMLDivElement>(null);
   const [isShaking, setIsShaking] = useState(false);
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
@@ -522,7 +522,9 @@ export default function EarthquakeSimulation({ grade = 5, onDecisionResult }: Pr
     document.addEventListener("pointerlockchange", onLockChange);
 
     const onCanvasClick = () => {
-      if (!document.pointerLockElement && !isMobile) document.body.requestPointerLock();
+      if (!document.pointerLockElement && !isMobile) {
+        try { document.body.requestPointerLock(); } catch (_) {}
+      }
     };
     renderer.domElement.addEventListener("click", onCanvasClick);
 
@@ -557,6 +559,37 @@ export default function EarthquakeSimulation({ grade = 5, onDecisionResult }: Pr
     renderer.domElement.addEventListener("touchstart", onTouchStart, { passive: true });
     renderer.domElement.addEventListener("touchmove", onTouchMove, { passive: true });
     renderer.domElement.addEventListener("touchend", onTouchEnd);
+
+    // ── Document touch look (always catches touches, bypasses z-index) ──
+    let docTouchId: number | null = null;
+    let docTouchLX = 0, docTouchLY = 0;
+    const onDocTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      docTouchId = e.touches[0].identifier;
+      docTouchLX = e.touches[0].clientX;
+      docTouchLY = e.touches[0].clientY;
+    };
+    const onDocTouchMove = (e: TouchEvent) => {
+      if (docTouchId === null) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === docTouchId) {
+          const dx = e.changedTouches[i].clientX - docTouchLX;
+          const dy = e.changedTouches[i].clientY - docTouchLY;
+          yawRef.current -= dx * 0.005;
+          pitchRef.current -= dy * 0.005;
+          docTouchLX = e.changedTouches[i].clientX;
+          docTouchLY = e.changedTouches[i].clientY;
+        }
+      }
+    };
+    const onDocTouchEnd = (e: TouchEvent) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === docTouchId) docTouchId = null;
+      }
+    };
+    document.addEventListener("touchstart", onDocTouchStart, { passive: true });
+    document.addEventListener("touchmove", onDocTouchMove, { passive: true });
+    document.addEventListener("touchend", onDocTouchEnd);
 
     // ===== ANIMATION =====
     let running = true;
@@ -780,6 +813,9 @@ export default function EarthquakeSimulation({ grade = 5, onDecisionResult }: Pr
       renderer.domElement.removeEventListener("touchstart", onTouchStart);
       renderer.domElement.removeEventListener("touchmove", onTouchMove);
       renderer.domElement.removeEventListener("touchend", onTouchEnd);
+      document.removeEventListener("touchstart", onDocTouchStart);
+      document.removeEventListener("touchmove", onDocTouchMove);
+      document.removeEventListener("touchend", onDocTouchEnd);
       if (renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
       if (document.pointerLockElement) document.exitPointerLock();
       renderer.dispose();
@@ -790,7 +826,9 @@ export default function EarthquakeSimulation({ grade = 5, onDecisionResult }: Pr
     setIsShaking(true);
     setSelectedChoice(null);
     shakeRef.current = 0.22;
-    if (!document.pointerLockElement && !isMobile) document.body.requestPointerLock();
+    if (!document.pointerLockElement && !isMobile) {
+      try { document.body.requestPointerLock(); } catch (_) {}
+    }
   };
 
   const handleChoice = (choice: "A" | "B" | "C") => {

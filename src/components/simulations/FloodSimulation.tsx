@@ -48,7 +48,7 @@ function makeWaterTexture(): THREE.CanvasTexture {
 }
 
 export default function FloodSimulation({ grade = 5, onDecisionResult }: Props) {
-  const isMobile = typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0);
+  const isMobile = typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0 || /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
   const containerRef = useRef<HTMLDivElement>(null);
   const [trashLeft, setTrashLeft] = useState(4);
   const [gameStatus, setGameStatus] = useState<"idle" | "playing" | "success" | "flood">("idle");
@@ -337,13 +337,45 @@ export default function FloodSimulation({ grade = 5, onDecisionResult }: Props) 
       if (!document.pointerLockElement) {
         if (isMobile) return;
         if (e.target === renderer.domElement || containerRef.current?.contains(e.target as Node)) {
-          document.body.requestPointerLock();
+          try { document.body.requestPointerLock(); } catch (_) {}
         }
         return;
       }
       doAngularDetect();
     };
     document.addEventListener("mousedown", onPointerDown);
+
+    // ── Document touch look (bypasses z-index, always works) ──
+    let docTouchId: number | null = null;
+    let docTouchLX = 0, docTouchLY = 0;
+    const onDocTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      docTouchId = e.touches[0].identifier;
+      docTouchLX = e.touches[0].clientX;
+      docTouchLY = e.touches[0].clientY;
+    };
+    const onDocTouchMove = (e: TouchEvent) => {
+      if (docTouchId === null) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === docTouchId) {
+          const dx = e.changedTouches[i].clientX - docTouchLX;
+          const dy = e.changedTouches[i].clientY - docTouchLY;
+          yawRef.current -= dx * 0.005;
+          pitchRef.current -= dy * 0.005;
+          pitchRef.current = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitchRef.current));
+          docTouchLX = e.changedTouches[i].clientX;
+          docTouchLY = e.changedTouches[i].clientY;
+        }
+      }
+    };
+    const onDocTouchEnd = (e: TouchEvent) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === docTouchId) docTouchId = null;
+      }
+    };
+    document.addEventListener("touchstart", onDocTouchStart, { passive: true });
+    document.addEventListener("touchmove", onDocTouchMove, { passive: true });
+    document.addEventListener("touchend", onDocTouchEnd);
 
     let running = true;
     let lastTime = performance.now() / 1000;
@@ -400,6 +432,9 @@ export default function FloodSimulation({ grade = 5, onDecisionResult }: Props) 
       renderer.domElement.removeEventListener("touchstart", onFloodTouchStart);
       renderer.domElement.removeEventListener("touchmove", onFloodTouchMove);
       renderer.domElement.removeEventListener("touchend", onFloodTouchEnd);
+      document.removeEventListener("touchstart", onDocTouchStart);
+      document.removeEventListener("touchmove", onDocTouchMove);
+      document.removeEventListener("touchend", onDocTouchEnd);
       if (renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
       if (document.pointerLockElement) document.exitPointerLock();
       renderer.dispose();
@@ -463,7 +498,9 @@ export default function FloodSimulation({ grade = 5, onDecisionResult }: Props) 
     setTimer(30);
     setGameStatus("playing");
     waterLevRef.current = -0.55;
-    if (!isMobile && !document.pointerLockElement) document.body.requestPointerLock();
+    if (!isMobile && !document.pointerLockElement) {
+      try { document.body.requestPointerLock(); } catch (_) {}
+    }
   };
 
   const resetGame = () => {

@@ -16,7 +16,7 @@ const MOVE_SPEED = 3.5;
 const TIMER_SECONDS = 20;
 
 export default function TsunamiSimulation({ grade = 5, onDecisionResult }: Props) {
-  const isMobile = typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0);
+  const isMobile = typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0 || /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
   const containerRef = useRef<HTMLDivElement>(null);
   const [gameStatus, setGameStatus] = useState<"idle" | "playing" | "wave" | "ended">("idle");
   const [timer, setTimer] = useState(TIMER_SECONDS);
@@ -290,12 +290,43 @@ export default function TsunamiSimulation({ grade = 5, onDecisionResult }: Props
       if (!document.pointerLockElement) {
         if (isMobile) return;
         if (e.target === renderer.domElement || containerRef.current?.contains(e.target as Node)) {
-          document.body.requestPointerLock();
+          try { document.body.requestPointerLock(); } catch (_) {}
         }
         return;
       }
     };
     document.addEventListener("mousedown", onPointerDown);
+
+    // ── Document touch look (bypasses z-index) ──
+    let docTouchId: number | null = null;
+    let docTouchLX = 0, docTouchLY = 0;
+    const onDocTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      docTouchId = e.touches[0].identifier;
+      docTouchLX = e.touches[0].clientX;
+      docTouchLY = e.touches[0].clientY;
+    };
+    const onDocTouchMove = (e: TouchEvent) => {
+      if (docTouchId === null) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === docTouchId) {
+          const dx = e.changedTouches[i].clientX - docTouchLX;
+          const dy = e.changedTouches[i].clientY - docTouchLY;
+          yawRef.current -= dx * 0.005;
+          pitchRef.current -= dy * 0.005;
+          docTouchLX = e.changedTouches[i].clientX;
+          docTouchLY = e.changedTouches[i].clientY;
+        }
+      }
+    };
+    const onDocTouchEnd = (e: TouchEvent) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === docTouchId) docTouchId = null;
+      }
+    };
+    document.addEventListener("touchstart", onDocTouchStart, { passive: true });
+    document.addEventListener("touchmove", onDocTouchMove, { passive: true });
+    document.addEventListener("touchend", onDocTouchEnd);
 
     // ── Animation loop ──
     let running = true;
@@ -459,6 +490,9 @@ export default function TsunamiSimulation({ grade = 5, onDecisionResult }: Props
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("pointerlockchange", onLockChange);
       document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onDocTouchStart);
+      document.removeEventListener("touchmove", onDocTouchMove);
+      document.removeEventListener("touchend", onDocTouchEnd);
       if (renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
       if (document.pointerLockElement) document.exitPointerLock();
       renderer.dispose();
@@ -473,7 +507,7 @@ export default function TsunamiSimulation({ grade = 5, onDecisionResult }: Props
     lastDistRenderRef.current = 12;
     setDistance(12);
     setGameStatus("playing");
-    if (!isMobile) document.body.requestPointerLock();
+    if (!isMobile) { try { document.body.requestPointerLock(); } catch (_) {} }
   };
 
   const resetGame = () => {
