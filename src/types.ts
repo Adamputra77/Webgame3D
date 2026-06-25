@@ -51,9 +51,3 @@ export interface PBLProject {
   createdAt: string;
 }
 
-export interface SiagaBotMessage {
-  id: string;
-  sender: "user" | "bot";
-  text: string;
-  timestamp: string;
-}

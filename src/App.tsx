@@ -31,7 +31,6 @@ import EarthquakeSimulation from "./components/simulations/EarthquakeSimulation"
 import FloodSimulation from "./components/simulations/FloodSimulation";
 import VolcanoSimulation from "./components/simulations/VolcanoSimulation";
 import TsunamiSimulation from "./components/simulations/TsunamiSimulation";
-import SiagaBot from "./components/SiagaBot";
 import EmergencyBag from "./components/EmergencyBag";
 import ReflectionPanel from "./components/ReflectionPanel";
 import PBL from "./components/pbl";
@@ -145,6 +144,13 @@ export default function App() {
     });
     return () => unsub();
   }, [selectedGrade]);
+
+  // Redirect from landing to tujuan when profile already exists (after refresh)
+  useEffect(() => {
+    if (profile && adventureStep === "landing") {
+      setAdventureStep("tujuan");
+    }
+  }, [profile]);
 
   // Fetch student profiles for the Teacher Dashboard
   const fetchStudentsList = async () => {
@@ -1206,7 +1212,7 @@ export default function App() {
                       </h5>
                       <ol className="list-decimal pl-4.5 space-y-2">
                         <li>
-                          <strong>PIKIR (IQ)</strong>: Siswa mempelajari konsep bencana menggunakan simulasi 3D dan penjelasan sains di SiagaBot AI.
+                          <strong>PIKIR (IQ)</strong>: Siswa mempelajari konsep bencana menggunakan simulasi 3D dan panduan mitigasi interaktif.
                         </li>
                         <li>
                           <strong>HATI (SQ)</strong>: Menghayati nilai keselamatan, kebersyukuran atas kelangsungan hidup raga bersama sesama.
@@ -1232,7 +1238,7 @@ export default function App() {
                           <strong>Gamifikasi Adaptif (Jalur 5 & 6)</strong>: Differentiated Learning memberi target tantangan relevan sesuai operasional kognitif Piaget siswa.
                         </li>
                         <li>
-                          <strong>AI Mentor Berkelanjutan</strong>: Integrasi Gemini API menjaga eksplorasi anak tetap informatif tanpa batas teori kaku.
+                          <strong>AI Mentor Berkelanjutan</strong>: Simulasi 3D menjaga eksplorasi anak tetap informatif tanpa batas teori kaku.
                         </li>
                       </ul>
                     </div>
@@ -1247,22 +1253,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      {/* Floating Siagabot component linked to current context */}
-      {profile && (
-        <SiagaBot
-          currentChoice=""
-          currentMissionId={
-            activeTab === "earthquake"
-              ? "earthquake"
-              : activeTab === "flood"
-              ? "flood"
-              : activeTab === "volcano"
-              ? "volcano"
-              : "general"
-          }
-        />
-      )}
 
       {/* Footer credits links */}
       <footer className="bg-white py-6 border-t border-slate-100 text-center text-[10px] text-slate-500 font-sans font-bold tracking-wider">

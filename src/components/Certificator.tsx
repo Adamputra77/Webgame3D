@@ -64,7 +64,7 @@ export default function Certificator({ profile, onReset }: CertificatorProps) {
         <div className="w-full flex justify-between items-center px-4 md:px-8 pt-4 font-sans text-[11px] font-bold">
           <div className="text-center">
             <span className="text-[9px] text-slate-400 block font-sans">Dibuat oleh AI Mentor:</span>
-            <span className="text-blue-600 font-bold block mt-2">SiagaBot AI ✓</span>
+            <span className="text-blue-600 font-bold block mt-2">Sistem MITIGA-XR ✓</span>
             <span className="text-[8px] text-slate-400 block border-t border-slate-100 mt-1 pt-1">Sistem Otomatis</span>
           </div>
 
