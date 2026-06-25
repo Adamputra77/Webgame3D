@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { Play, RotateCcw, Info, Compass, Flag, AlertOctagon, Waves } from "lucide-react";
+import TouchControls from "../TouchControls";
 
 interface Props {
   grade?: number;
@@ -15,6 +16,7 @@ const MOVE_SPEED = 3.5;
 const TIMER_SECONDS = 20;
 
 export default function TsunamiSimulation({ grade = 5, onDecisionResult }: Props) {
+  const isMobile = typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [gameStatus, setGameStatus] = useState<"idle" | "playing" | "wave" | "ended">("idle");
   const [timer, setTimer] = useState(TIMER_SECONDS);
@@ -286,6 +288,7 @@ export default function TsunamiSimulation({ grade = 5, onDecisionResult }: Props
     const onPointerDown = (e: MouseEvent) => {
       if (e.button !== 0) return;
       if (!document.pointerLockElement) {
+        if (isMobile) return;
         if (e.target === renderer.domElement || containerRef.current?.contains(e.target as Node)) {
           document.body.requestPointerLock();
         }
@@ -470,7 +473,7 @@ export default function TsunamiSimulation({ grade = 5, onDecisionResult }: Props
     lastDistRenderRef.current = 12;
     setDistance(12);
     setGameStatus("playing");
-    document.body.requestPointerLock();
+    if (!isMobile) document.body.requestPointerLock();
   };
 
   const resetGame = () => {
@@ -523,10 +526,10 @@ export default function TsunamiSimulation({ grade = 5, onDecisionResult }: Props
         </div>
       )}
 
-      <div className="relative w-full h-[400px] rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-sky-950 cursor-crosshair select-none">
+      <div className="relative w-full h-[min(400px,calc(100dvh-16rem))] rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-sky-950 cursor-crosshair select-none">
         <div ref={containerRef} className="w-full h-full" />
 
-        {!isLocked && gameStatus === "idle" && (
+        {!isLocked && gameStatus === "idle" && !isMobile && (
           <div className="absolute top-4 left-4 bg-slate-900/80 text-slate-300 text-[9px] font-bold px-3 py-1.5 rounded-full border border-slate-700 flex items-center gap-1.5 pointer-events-none select-none">🖱️ Klik area 3D untuk lihat-lihat</div>
         )}
 
@@ -535,6 +538,15 @@ export default function TsunamiSimulation({ grade = 5, onDecisionResult }: Props
             <div className="w-0.5 h-5 bg-white/40 rounded-full absolute left-1/2 -translate-x-1/2 -top-2.5" />
             <div className="w-5 h-0.5 bg-white/40 rounded-full absolute top-1/2 -translate-y-1/2 -left-2.5" />
           </div>
+        )}
+
+        {isMobile && gameStatus === "playing" && (
+          <TouchControls
+            keysRef={keysRef as React.MutableRefObject<{ w: boolean; a: boolean; s: boolean; d: boolean }>}
+            yawRef={yawRef}
+            pitchRef={pitchRef}
+            enabled={gameStatus === "playing"}
+          />
         )}
 
         {gameStatus === "playing" && (
