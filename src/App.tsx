@@ -58,6 +58,7 @@ export default function App() {
   const [preTestScore, setPreTestScore] = useState<number | null>(null);
   const [postTestScore, setPostTestScore] = useState<number | null>(null);
   const [currentViewMode, setCurrentViewMode] = useState<"adventure" | "teacher" | "juri">("adventure");
+  const [showModulLanding, setShowModulLanding] = useState(false);
 
   // Registration credentials
   const [guestName, setGuestName] = useState("");
@@ -350,7 +351,16 @@ export default function App() {
       {/* Main Body Grid */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 flex flex-col gap-6" id="dashboard-core">
         {/* Onboarding View: Now with Adaptive Grade Selection */}
-        {!profile && activeTab === "intro" && (
+        {!profile && (activeTab === "intro" || showModulLanding) && (
+          showModulLanding ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="max-w-xl mx-auto w-full mt-4"
+            >
+              <DaftarModul onBack={() => setShowModulLanding(false)} />
+            </motion.div>
+          ) : (
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -525,9 +535,23 @@ export default function App() {
             >
               <span>🔑 Masuk Akun Google Belajar</span>
             </button>
-          </motion.div>
-        )}
 
+            <div className="relative flex py-1 items-center">
+              <div className="flex-1 border-t-2 border-slate-100"></div>
+              <span className="flex-shrink mx-4 text-slate-400 text-[9px] font-black tracking-widest font-sans">LANGSUNG LIHAT</span>
+              <div className="flex-1 border-t-2 border-slate-100"></div>
+            </div>
+
+            <button
+              onClick={() => setShowModulLanding(true)}
+              className="w-full p-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-black rounded-2xl text-xs transition border-2 border-emerald-200/80 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+            >
+              <span>📄 Lihat Modul Pembelajaran</span>
+            </button>
+          </motion.div>
+        )
+      )}
+      
         {/* Dashboard Panels */}
         {profile && (
           <div className="flex flex-col gap-6 w-full text-slate-800">

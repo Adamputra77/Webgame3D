@@ -8,7 +8,7 @@ interface ModulItem {
   file: string;
 }
 
-export default function DaftarModul({ onContinue }: { onContinue: () => void }) {
+export default function DaftarModul({ onContinue, onBack }: { onContinue?: () => void; onBack?: () => void }) {
   const [modulList, setModulList] = useState<ModulItem[]>([]);
   const [selected, setSelected] = useState<ModulItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,16 +103,24 @@ export default function DaftarModul({ onContinue }: { onContinue: () => void }) 
         </div>
       )}
 
-      {modulList.length > 0 && (
-        <div className="flex justify-center pt-3">
+      <div className="flex justify-center gap-3 pt-3">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="px-6 py-4 bg-slate-100 hover:bg-slate-200 border-b-4 border-slate-300 text-slate-700 font-black rounded-2xl text-sm transition shadow-sm cursor-pointer active:scale-[0.98] font-playful"
+          >
+            ⬅ Kembali ke Beranda
+          </button>
+        )}
+        {onContinue && modulList.length > 0 && (
           <button
             onClick={onContinue}
             className="px-8 py-4 bg-indigo-600 hover:bg-indigo-550 border-b-4 border-indigo-800 text-white font-black rounded-2xl text-sm transition uppercase tracking-wider shadow-md shadow-indigo-600/10 cursor-pointer active:scale-[0.98] font-playful"
           >
             Lanjut ke Materi Bencana 📚
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </motion.div>
   );
 }
