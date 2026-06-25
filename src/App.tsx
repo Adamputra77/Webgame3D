@@ -38,6 +38,7 @@ import Certificator from "./components/Certificator";
 import DisasterMaterials from "./components/DisasterMaterials";
 import DisasterQuiz from "./components/DisasterQuiz";
 import DisasterRefleksi from "./components/DisasterRefleksi";
+import DaftarModul from "./components/DaftarModul";
 import { UserProfile } from "./types";
 import { auth, googleProvider, db } from "./firebase";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
@@ -51,7 +52,7 @@ export default function App() {
 
   // New Linear Adventure Flow States
   const [adventureStep, setAdventureStep] = useState<
-    "landing" | "tujuan" | "materi" | "pretest" | "game" | "posttest" | "hasil" | "refleksi" | "certificate"
+    "landing" | "tujuan" | "rencana" | "materi" | "pretest" | "game" | "posttest" | "hasil" | "refleksi" | "certificate"
   >("landing");
   const [activeMission, setActiveMission] = useState<"earthquake" | "flood" | "volcano" | "tsunami">("earthquake");
   const [preTestScore, setPreTestScore] = useState<number | null>(null);
@@ -598,6 +599,7 @@ export default function App() {
                   <div className="bg-white border-2 border-indigo-50 p-4 rounded-3xl shadow-sm overflow-x-auto flex items-center justify-between gap-2 scrollbar-none">
                     {[
                       { step: "tujuan", label: "Tujuan 🎯" },
+                      { step: "rencana", label: "Modul 📄" },
                       { step: "materi", label: "Materi Bencana 📚" },
                       { step: "pretest", label: "Pre-Test 📝" },
                       { step: "game", label: "Game 3D 🎮" },
@@ -608,7 +610,7 @@ export default function App() {
                     ].map((st, i) => {
                       const isActive = adventureStep === st.step;
                       const isCompleted = [
-                        "tujuan", "materi", "pretest", "game", "posttest", "hasil", "refleksi", "certificate"
+                        "tujuan", "rencana", "materi", "pretest", "game", "posttest", "hasil", "refleksi", "certificate"
                       ].indexOf(adventureStep) > i;
 
                       return (
@@ -624,7 +626,7 @@ export default function App() {
                           >
                             {i + 1}. {st.label}
                           </span>
-                          {i < 7 && <span className="text-slate-300 font-bold text-xs select-none">➔</span>}
+                          {i < 8 && <span className="text-slate-300 font-bold text-xs select-none">➔</span>}
                         </div>
                       );
                     })}
@@ -666,12 +668,23 @@ export default function App() {
 
                       <div className="flex justify-center pt-3">
                         <button
-                          onClick={() => setAdventureStep("materi")}
+                          onClick={() => setAdventureStep("rencana")}
                           className="px-8 py-4 bg-indigo-600 hover:bg-indigo-550 border-b-4 border-indigo-800 text-white font-black rounded-2xl text-sm transition uppercase tracking-wider shadow-md shadow-indigo-600/10 cursor-pointer active:scale-[0.98] font-playful"
                         >
-                          Mulai Belajar Materi Bencana 📚
+                          Lihat Modul Pembelajaran 📄
                         </button>
                       </div>
+                    </motion.div>
+                  )}
+
+                  {/* STEP 2.5: MODUL / RENCANA PEMBELAJARAN (PDF) */}
+                  {adventureStep === "rencana" && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="space-y-4"
+                    >
+                      <DaftarModul onContinue={() => setAdventureStep("materi")} />
                     </motion.div>
                   )}
 
