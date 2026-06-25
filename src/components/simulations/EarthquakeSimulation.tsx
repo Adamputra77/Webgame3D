@@ -75,6 +75,7 @@ function makePosterTexture(): THREE.CanvasTexture {
 }
 
 export default function EarthquakeSimulation({ grade = 5, onDecisionResult }: Props) {
+  const isMobile = typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isShaking, setIsShaking] = useState(false);
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
@@ -521,9 +522,41 @@ export default function EarthquakeSimulation({ grade = 5, onDecisionResult }: Pr
     document.addEventListener("pointerlockchange", onLockChange);
 
     const onCanvasClick = () => {
-      if (!document.pointerLockElement) document.body.requestPointerLock();
+      if (!document.pointerLockElement && !isMobile) document.body.requestPointerLock();
     };
     renderer.domElement.addEventListener("click", onCanvasClick);
+
+    // ── Touch look for mobile ──
+    let touchId: number | null = null;
+    let touchStartX = 0, touchStartY = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      touchId = e.touches[0].identifier;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (touchId === null) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === touchId) {
+          const dx = e.changedTouches[i].clientX - touchStartX;
+          const dy = e.changedTouches[i].clientY - touchStartY;
+          yawRef.current -= dx * 0.005;
+          pitchRef.current -= dy * 0.005;
+          pitchRef.current = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitchRef.current));
+          touchStartX = e.changedTouches[i].clientX;
+          touchStartY = e.changedTouches[i].clientY;
+        }
+      }
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === touchId) touchId = null;
+      }
+    };
+    renderer.domElement.addEventListener("touchstart", onTouchStart, { passive: true });
+    renderer.domElement.addEventListener("touchmove", onTouchMove, { passive: true });
+    renderer.domElement.addEventListener("touchend", onTouchEnd);
 
     // ===== ANIMATION =====
     let running = true;
@@ -744,6 +777,9 @@ export default function EarthquakeSimulation({ grade = 5, onDecisionResult }: Pr
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("pointerlockchange", onLockChange);
       renderer.domElement.removeEventListener("click", onCanvasClick);
+      renderer.domElement.removeEventListener("touchstart", onTouchStart);
+      renderer.domElement.removeEventListener("touchmove", onTouchMove);
+      renderer.domElement.removeEventListener("touchend", onTouchEnd);
       if (renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
       if (document.pointerLockElement) document.exitPointerLock();
       renderer.dispose();
@@ -754,7 +790,7 @@ export default function EarthquakeSimulation({ grade = 5, onDecisionResult }: Pr
     setIsShaking(true);
     setSelectedChoice(null);
     shakeRef.current = 0.22;
-    if (!document.pointerLockElement) document.body.requestPointerLock();
+    if (!document.pointerLockElement && !isMobile) document.body.requestPointerLock();
   };
 
   const handleChoice = (choice: "A" | "B" | "C") => {
@@ -813,10 +849,10 @@ export default function EarthquakeSimulation({ grade = 5, onDecisionResult }: Pr
         </div>
       )}
 
-      <div className="relative w-full h-[400px] rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-slate-950 cursor-crosshair select-none">
+      <div className="relative w-full h-[min(400px,calc(100dvh-16rem))] rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-slate-950 cursor-crosshair select-none">
         <div ref={containerRef} className="w-full h-full" />
 
-        {!isLocked && (
+        {!isLocked && !isMobile && (
           <div className="absolute top-4 left-4 bg-slate-900/80 text-slate-300 text-[9px] font-bold px-3 py-1.5 rounded-full border border-slate-700 flex items-center gap-1.5 pointer-events-none select-none">🖱️ Klik area 3D untuk lihat-lihat</div>
         )}
         {isLocked && (
