@@ -38,8 +38,8 @@ export default function VolcanoSimulation({ grade = 5, onDecisionResult }: Props
     const el = containerRef.current;
     if (!el) return;
 
-    const w = el.clientWidth;
-    const h = el.clientHeight;
+    const w = el.clientWidth || 400;
+    const h = el.clientHeight || 300;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1c1917);
@@ -474,7 +474,7 @@ export default function VolcanoSimulation({ grade = 5, onDecisionResult }: Props
         </div>
       )}
 
-      <div className="relative w-full h-[min(400px,calc(100dvh-16rem))] rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-stone-950 cursor-crosshair select-none">
+      <div className="relative w-full h-[min(400px,calc(100vh-12rem))] rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-stone-950 cursor-crosshair select-none">
         <div ref={containerRef} className="w-full h-full" />
 
         {!isLocked && !isMobile && (

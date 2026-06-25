@@ -116,8 +116,8 @@ export default function EarthquakeSimulation({ grade = 5, onDecisionResult }: Pr
     const el = containerRef.current;
     if (!el) return;
 
-    const w = el.clientWidth;
-    const h = el.clientHeight;
+    const w = el.clientWidth || 400;
+    const h = el.clientHeight || 300;
     const ROOM_H = 3.5;
     const ROOM_W = 12;
     const ROOM_D = 12;
@@ -849,7 +849,7 @@ export default function EarthquakeSimulation({ grade = 5, onDecisionResult }: Pr
         </div>
       )}
 
-      <div className="relative w-full h-[min(400px,calc(100dvh-16rem))] rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-slate-950 cursor-crosshair select-none">
+      <div className="relative w-full h-[min(400px,calc(100vh-12rem))] rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-slate-950 cursor-crosshair select-none">
         <div ref={containerRef} className="w-full h-full" />
 
         {!isLocked && !isMobile && (
