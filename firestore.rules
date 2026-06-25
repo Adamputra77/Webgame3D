@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net (default deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Exception to allow read of connection test doc
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    // 3. Reusable global helpers
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function incoming() { 
+      return request.resource.data; 
+    }
+    function existing() { 
+      return resource.data; 
+    }
+    function isSignedIn() { 
+      return request.auth != null; 
+    }
+    function isOwner(userId) { 
+      return isSignedIn() && request.auth.uid == userId; 
+    }
+
+    // Entity-specific validation functions
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'avatar', 'level', 'points', 'badges', 'missionsCompleted', 'createdAt', 'grade'])
+        && data.keys().size() == 9
+        && data.uid == request.auth.uid
+        && data.name is string && data.name.size() <= 100
+        && data.avatar is string && data.avatar.size() <= 50
+        && data.level is number && data.level >= 1
+        && data.points is number && data.points >= 0
+        && data.badges is list && data.badges.size() <= 10
+        && data.missionsCompleted is list && data.missionsCompleted.size() <= 10
+        && data.createdAt is string && data.createdAt.size() <= 50
+        && data.grade is number && (data.grade == 5 || data.grade == 6);
+    }
+
+    function isValidReflection(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'missionId', 'pikirText', 'pikirVal', 'hatiText', 'hatiVal', 'rasaText', 'rasaVal', 'ragaText', 'ragaVal', 'createdAt'])
+        && data.keys().size() == 12
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.id is string && data.id.size() <= 128
+        && data.missionId is string && data.missionId.size() <= 50
+        && data.pikirText is string && data.pikirText.size() <= 5000
+        && data.pikirVal is number && data.pikirVal >= 1 && data.pikirVal <= 10
+        && data.hatiText is string && data.hatiText.size() <= 5000
+        && data.hatiVal is number && data.hatiVal >= 1 && data.hatiVal <= 10
+        && data.rasaText is string && data.rasaText.size() <= 5000
+        && data.rasaVal is number && data.rasaVal >= 1 && data.rasaVal <= 10
+        && data.ragaText is string && data.ragaText.size() <= 5000
+        && data.ragaVal is number && data.ragaVal >= 1 && data.ragaVal <= 10
+        && data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidDigitalTwin(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'layoutName', 'items', 'createdAt'])
+        && data.keys().size() == 5
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.id is string && data.id.size() <= 128
+        && data.layoutName is string && data.layoutName.size() <= 100
+        && data.items is list && data.items.size() <= 50
+        && data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidProject(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'description', 'fileUrlOrData', 'status', 'createdAt'])
+        && data.keys().size() == 7
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.id is string && data.id.size() <= 128
+        && data.title is string && data.title.size() <= 100
+        && data.description is string && data.description.size() <= 2000
+        && data.fileUrlOrData is string && data.fileUrlOrData.size() <= 200000
+        && data.status is string && data.status.size() <= 50
+        && data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    // Rules for matching collections
+    match /users/{userId} {
+      allow get, list: if true;
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isOwner(userId);
+
+      match /reflections/{reflectionId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(reflectionId) && isValidReflection(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(reflectionId) && isValidReflection(incoming(), userId) && incoming().createdAt == existing().createdAt;
+        allow delete: if isOwner(userId) && isValidId(reflectionId);
+      }
+
+      match /digitalTwins/{twinId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(twinId) && isValidDigitalTwin(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(twinId) && isValidDigitalTwin(incoming(), userId) && incoming().createdAt == existing().createdAt;
+        allow delete: if isOwner(userId) && isValidId(twinId);
+      }
+
+      match /projects/{projectId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(projectId) && isValidProject(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(projectId) && isValidProject(incoming(), userId) && incoming().createdAt == existing().createdAt;
+        allow delete: if isOwner(userId) && isValidId(projectId);
+      }
+    }
+  }
+}

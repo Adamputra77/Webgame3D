@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user customization, avatar, and overall mission progress.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The Firebase user UID." },
+        "name": { "type": "string", "description": "The user's display nickname." },
+        "avatar": { "type": "string", "description": "Selected avatar identifier (e.g. 'hero_boy', 'hero_girl')." },
+        "level": { "type": "integer", "description": "Adaptive level of the user starting from 1." },
+        "points": { "type": "integer", "description": "Gamification points earned." },
+        "badges": { "type": "array", "description": "Unlocked badges." },
+        "missionsCompleted": { "type": "array", "description": "List of mission keys completed." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Profile creation timestamp." }
+      },
+      "required": ["uid", "name", "avatar", "level", "points", "badges", "missionsCompleted", "createdAt"]
+    },
+    "Reflection": {
+      "title": "Deep Learning Reflection",
+      "description": "Student reflections on 4 dimensions: Pikir (Cognitive), Hati (Affective), Rasa (Empathy), and Raga (Action).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Reflection document ID." },
+        "userId": { "type": "string", "description": "Owner student UID." },
+        "missionId": { "type": "string", "description": "The mission this reflection belongs to (earthquake, flood, volcano)." },
+        "pikirText": { "type": "string", "description": "Reflective text for PIKIR: what was learned." },
+        "pikirVal": { "type": "integer", "description": "Metrics value (1-10) for PIKIR progress." },
+        "hatiText": { "type": "string", "description": "Reflective text for HATI: values discovered." },
+        "hatiVal": { "type": "integer", "description": "Metrics value (1-10) for HATI progress." },
+        "rasaText": { "type": "string", "description": "Reflective text for RASA: feelings towards victims." },
+        "rasaVal": { "type": "integer", "description": "Metrics value (1-10) for RASA progress." },
+        "ragaText": { "type": "string", "description": "Reflective text for RAGA: concrete safety actions taken." },
+        "ragaVal": { "type": "integer", "description": "Metrics value (1-10) for RAGA progress." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["id", "userId", "missionId", "pikirText", "pikirVal", "hatiText", "hatiVal", "rasaText", "rasaVal", "ragaText", "ragaVal", "createdAt"]
+    },
+    "DigitalTwin": {
+      "title": "Disaster Digital Twin Model",
+      "description": "Simple grid or coordinate representation of the school's digital twin escape map planned by the student.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Twin configuration ID." },
+        "userId": { "type": "string", "description": "Owner student UID." },
+        "layoutName": { "type": "string", "description": "Name of the digital twin room or layout (e.g., 'Kelas 5A', 'Halaman Sekolah')." },
+        "items": { "type": "array", "description": "Array of placed hazard, point of assembly, and signage markers." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["id", "userId", "layoutName", "items", "createdAt"]
+    },
+    "Project": {
+      "title": "Project Based Learning Upload",
+      "description": "Metadata of the 'Peta Evakuasi Rumahku' project uploaded by the student.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Project ID." },
+        "userId": { "type": "string", "description": "Owner student UID." },
+        "title": { "type": "string", "description": "Project title." },
+        "description": { "type": "string", "description": "PBL description of their home evacuation plan." },
+        "fileUrlOrData": { "type": "string", "description": "Simulated uploaded file URL or base64 map sketch draft." },
+        "status": { "type": "string", "description": "Upload review status, e.g. 'Draft', 'Sudah Verifikasi'." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["id", "userId", "title", "description", "fileUrlOrData", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Main student profiles collection."
+    },
+    "/users/{userId}/reflections/{reflectionId}": {
+      "schema": "Reflection",
+      "description": "Each student's 4-dimensional reflections."
+    },
+    "/users/{userId}/digitalTwins/{twinId}": {
+      "schema": "DigitalTwin",
+      "description": "School digital escape map twins planned by the student."
+    },
+    "/users/{userId}/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Home evacuation projects uploaded by the student."
+    }
+  }
+}

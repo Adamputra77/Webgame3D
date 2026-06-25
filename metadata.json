@@ -1,0 +1,6 @@
+{
+  "name": "MITIGA-XR",
+  "description": "Mitigasi Bencana Berbasis Deep Learning dan Simulasi 3D Adaptif untuk Lomba Inovasi Digital Mahasiswa (LIDM)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
